@@ -28,3 +28,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# AgentCore
+.bedrock_agentcore.yaml

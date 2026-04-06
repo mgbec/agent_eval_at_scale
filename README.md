@@ -10,7 +10,12 @@ src/
     triage_agent.py        # Fetches, prioritizes, categorizes alerts
     remediation_agent.py   # Assesses fixes, produces upgrade plans
     reporting_agent.py     # Aggregates stats, builds executive summaries, assigns teams
+  runtime/
+    triage_runtime.py      # AgentCore entrypoint for triage agent
+    remediation_runtime.py # AgentCore entrypoint for remediation agent
+    reporting_runtime.py   # AgentCore entrypoint for reporting agent
   tools/
+    auth.py                # GitHub auth (Secrets Manager → gh CLI → env var)
     github_alerts.py       # GitHub Dependabot API wrappers
     remediation.py         # Fix assessment and advisory lookup tools
     reporting.py           # Alert aggregation, executive summaries, team assignments
@@ -32,18 +37,27 @@ pip install -e ".[dev]"
 
 The tools authenticate with GitHub using this priority:
 
-1. **GitHub CLI (recommended)** — if `gh` is installed and you're logged in, it just works:
+1. **AWS Secrets Manager (cloud)** — for AgentCore deployments:
+   ```bash
+   aws secretsmanager create-secret \
+     --name dependabot-analyzer/github-token \
+     --secret-string '{"GITHUB_TOKEN":"ghp_your_token"}'
+   ```
+   Configure the secret name via `GITHUB_SECRET_NAME` env var (defaults to `dependabot-analyzer/github-token`).
+
+2. **GitHub CLI (local dev)** — if `gh` is installed and you're logged in:
    ```bash
    gh auth login
    ```
-2. **Environment variable** — set `GITHUB_TOKEN` manually:
+
+3. **Environment variable** — set `GITHUB_TOKEN` manually:
    ```bash
    export GITHUB_TOKEN=ghp_your_token_here   # Linux/macOS
    set GITHUB_TOKEN=ghp_your_token_here      # Windows cmd
    $env:GITHUB_TOKEN="ghp_your_token_here"   # Windows PowerShell
    ```
 
-The token is resolved once and cached for the process lifetime. If neither method is available, API calls will run unauthenticated (lower rate limits, no access to private repos).
+The token is resolved once and cached for the process lifetime.
 
 ## Usage
 
@@ -72,6 +86,58 @@ python -m evals.run_evals --agent reporting --save
 # Evaluate all three
 python -m evals.run_evals --agent all --save
 ```
+
+### Evaluate deployed AgentCore agents
+```bash
+# Evaluate a deployed agent by ARN
+python -m evals.run_evals --agent triage --deployed \
+  --arn arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/triage-agent-abc123 \
+  --region us-east-1 --save
+```
+
+## Deploy to AWS AgentCore
+
+Install the AgentCore dependencies:
+```bash
+pip install -e ".[agentcore]"
+```
+
+### 1. Store the GitHub token in Secrets Manager
+```bash
+aws secretsmanager create-secret \
+  --name dependabot-analyzer/github-token \
+  --secret-string '{"GITHUB_TOKEN":"ghp_your_token"}'
+```
+
+### 2. Test locally
+```bash
+# Start the triage agent locally
+python src/runtime/triage_runtime.py
+
+# In another terminal
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Triage Dependabot alerts for owner=myorg repo=myapp"}'
+```
+
+### 3. Configure and deploy
+```bash
+# Configure (repeat for each agent with its entrypoint)
+agentcore configure -e src/runtime/triage_runtime.py
+
+# Deploy to AgentCore Runtime
+agentcore deploy
+
+# Test the deployed agent
+agentcore invoke '{"prompt": "Triage Dependabot alerts for owner=myorg repo=myapp"}'
+```
+
+### 4. Enable observability
+Add `aws-opentelemetry-distro` (already in `requirements.txt`) and run with auto-instrumentation:
+```bash
+opentelemetry-instrument python src/runtime/triage_runtime.py
+```
+Traces flow to CloudWatch automatically when deployed to AgentCore.
 
 ## Failure Modes Covered
 

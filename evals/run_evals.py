@@ -1,15 +1,19 @@
 """Run failure-mode evaluations against the Dependabot alert analysis agents.
 
 Usage:
+    # Local agents
     python -m evals.run_evals --agent triage
-    python -m evals.run_evals --agent remediation
-    python -m evals.run_evals --agent all
+    python -m evals.run_evals --agent all --save
+
+    # Deployed AgentCore agents
+    python -m evals.run_evals --agent triage --deployed --arn arn:aws:bedrock-agentcore:...
 """
 
 import argparse
 import asyncio
 import json
 import sys
+import uuid
 from pathlib import Path
 
 from strands_evals import Case, Experiment
@@ -124,6 +128,42 @@ def _make_reporting_task():
     return task_fn
 
 
+# --- Deployed AgentCore task factory ---
+
+def _make_deployed_task(agent_arn: str, region: str = "us-east-1"):
+    """Create a task function that invokes a deployed AgentCore agent.
+
+    Args:
+        agent_arn: The ARN of the deployed AgentCore Runtime.
+        region: AWS region where the agent is deployed.
+    """
+    import boto3
+
+    client = boto3.client("bedrock-agentcore", region_name=region)
+
+    def task_fn(case: Case) -> dict:
+        payload = json.dumps({"prompt": case.input}).encode()
+        session_id = str(uuid.uuid4())
+
+        response = client.invoke_agent_runtime(
+            agentRuntimeArn=agent_arn,
+            runtimeSessionId=session_id,
+            payload=payload,
+            qualifier="DEFAULT",
+        )
+
+        content = []
+        for chunk in response.get("response", []):
+            content.append(chunk.decode("utf-8"))
+        result = json.loads("".join(content))
+
+        return {
+            "output": result.get("result", str(result)),
+        }
+
+    return task_fn
+
+
 # --- Evaluator configurations per agent type ---
 
 TRIAGE_EVALUATORS = [
@@ -198,26 +238,26 @@ REPORTING_EVALUATORS = [
 ]
 
 
-def run_triage_evals() -> list[EvaluationReport]:
+def run_triage_evals(agent_arn: str | None = None, region: str = "us-east-1") -> list[EvaluationReport]:
     """Run evaluations against the triage agent."""
     experiment = Experiment(cases=TRIAGE_CASES, evaluators=TRIAGE_EVALUATORS)
-    task_fn = _make_triage_task()
+    task_fn = _make_deployed_task(agent_arn, region) if agent_arn else _make_triage_task()
     reports = experiment.run_evaluations(task_fn)
     return reports
 
 
-def run_remediation_evals() -> list[EvaluationReport]:
+def run_remediation_evals(agent_arn: str | None = None, region: str = "us-east-1") -> list[EvaluationReport]:
     """Run evaluations against the remediation agent."""
     experiment = Experiment(cases=REMEDIATION_CASES, evaluators=REMEDIATION_EVALUATORS)
-    task_fn = _make_remediation_task()
+    task_fn = _make_deployed_task(agent_arn, region) if agent_arn else _make_remediation_task()
     reports = experiment.run_evaluations(task_fn)
     return reports
 
 
-def run_reporting_evals() -> list[EvaluationReport]:
+def run_reporting_evals(agent_arn: str | None = None, region: str = "us-east-1") -> list[EvaluationReport]:
     """Run evaluations against the reporting agent."""
     experiment = Experiment(cases=REPORTING_CASES, evaluators=REPORTING_EVALUATORS)
-    task_fn = _make_reporting_task()
+    task_fn = _make_deployed_task(agent_arn, region) if agent_arn else _make_reporting_task()
     reports = experiment.run_evaluations(task_fn)
     return reports
 
@@ -285,22 +325,45 @@ def main():
         help="Which agent to evaluate",
     )
     parser.add_argument("--save", action="store_true", help="Save reports to eval_results/")
+    parser.add_argument(
+        "--deployed",
+        action="store_true",
+        help="Evaluate a deployed AgentCore agent instead of local",
+    )
+    parser.add_argument(
+        "--arn",
+        type=str,
+        default=None,
+        help="AgentCore Runtime ARN (required with --deployed)",
+    )
+    parser.add_argument(
+        "--region",
+        type=str,
+        default="us-east-1",
+        help="AWS region for deployed agent (default: us-east-1)",
+    )
     args = parser.parse_args()
 
+    if args.deployed and not args.arn:
+        parser.error("--arn is required when using --deployed")
+
+    arn = args.arn if args.deployed else None
+    region = args.region
+
     if args.agent in ("triage", "all"):
-        reports = run_triage_evals()
+        reports = run_triage_evals(agent_arn=arn, region=region)
         print_failure_analysis(reports, "Triage Agent")
         if args.save:
             save_reports(reports, "triage")
 
     if args.agent in ("remediation", "all"):
-        reports = run_remediation_evals()
+        reports = run_remediation_evals(agent_arn=arn, region=region)
         print_failure_analysis(reports, "Remediation Agent")
         if args.save:
             save_reports(reports, "remediation")
 
     if args.agent in ("reporting", "all"):
-        reports = run_reporting_evals()
+        reports = run_reporting_evals(agent_arn=arn, region=region)
         print_failure_analysis(reports, "Reporting Agent")
         if args.save:
             save_reports(reports, "reporting")
