@@ -1,6 +1,6 @@
 # Dependabot Alert Analyzer
 
-AI agents that triage and remediate Dependabot vulnerability alerts, with a comprehensive evaluation suite for detecting agentic failure modes at scale.
+AI agents that triage and remediate Dependabot vulnerability alerts, deployable to AWS Bedrock AgentCore, with a comprehensive evaluation suite for detecting agentic failure modes at scale.
 
 ## Architecture
 
@@ -23,6 +23,10 @@ evals/
     test_cases.py          # Curated cases targeting specific failure modes
     custom_evaluators.py   # Domain-specific evaluators (severity, safety, grounding, consistency)
     run_evals.py           # Evaluation runner with failure analysis reporting
+docs/
+    guide-to-agent-evaluations.md      # Beginner-friendly intro to agent evals and security
+    agentcore-identity-and-security.md # How AgentCore handles agent identity and auth
+    references.md                      # Links to all referenced documentation
 ```
 
 ## Setup
@@ -150,3 +154,9 @@ Traces flow to CloudWatch automatically when deployed to AgentCore.
 | Wrong tool selection | TrajectoryEvaluator | Agent picks wrong tools or skips required ones |
 | Unfaithful output | OutputEvaluator (rubric) | Output contradicts tool results |
 | Goal non-completion | GoalSuccessRateEvaluator | Agent doesn't actually solve the problem |
+
+## Documentation
+
+- [Guide to Agent Evaluations](docs/guide-to-agent-evaluations.md) — why evaluations matter, how they contribute to agent security, and how to get started
+- [AgentCore Identity and Security](docs/agentcore-identity-and-security.md) — how AgentCore handles agent identity, inbound/outbound auth, token vaults, and agent-to-agent communication
+- [References](docs/references.md) — links to all external documentation and resources
