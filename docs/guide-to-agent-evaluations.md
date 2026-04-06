@@ -2,11 +2,11 @@
 
 ## What Are Agent Evaluations?
 
-When you build an AI agent — a system that can make decisions, call APIs, and take actions on your behalf — you need a way to know if it's doing the right thing. That's what evaluations (evals) are for.
+When you build an AI agent — a system that can make decisions, call APIs, and take actions on your behalf — you need a way to know if it's doing the right thing. That's where evaluations (evals) come into the picture.
 
-Think of evals like a test suite for your agent's judgment. Just as you'd write unit tests to verify your code produces the correct output, evals verify that your agent makes good decisions, uses the right tools, and doesn't make things up.
+Evals can function like a test mechanism for your agent's judgment. We can use common evals like correct path of tool calls, correctness of final result, and more.  We can also generate custom evals for our specific use case and organization.  Does the end result agree with our company tenets, for example, our company committment to environmental responsibility?
 
-The difference is that agents are non-deterministic. Ask the same question twice and you might get different answers, different tool calls, or different reasoning paths. Evals account for this by testing across many scenarios and measuring patterns rather than expecting exact matches.
+The non deterministic nature of agents and AI require a different approach to evaluation. Ask the same question twice and you might get different answers, different tool calls, or different reasoning paths. Evals account for this by testing across many scenarios and measuring patterns rather than expecting exact matches.
 
 ## Why Evaluations Matter
 
@@ -68,9 +68,9 @@ What happens when the agent can't access a private repository? A secure agent re
 
 Our test cases include scenarios where API calls are expected to fail. These exist specifically to verify that the agent handles errors honestly rather than filling in gaps with fabricated data.
 
-## The Five Types of Agent Failure
+## Types of Agentic Failure
 
-Understanding failure modes helps you design better evals. Here is a practical taxonomy of the five main categories:
+Understanding failure modes helps you design better evals. Here is a practical taxonomy of the some of the main categories:
 
 | Failure Mode | What Happens | Why It's Dangerous | How to Catch It |
 |---|---|---|---|
