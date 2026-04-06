@@ -1,7 +1,7 @@
 [project]
 name = "dependabot-alert-analyzer"
 version = "0.1.0"
-description = "Agents that analyze Dependabot alerts, evaluated for failure modes at scale"
+description = "Agents that analyze Dependabot alerts, deployable to AWS Bedrock AgentCore, evaluated for failure modes at scale"
 requires-python = ">=3.10"
 dependencies = [
     "strands-agents>=0.1.0",

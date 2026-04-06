@@ -1,7 +1,8 @@
+# Runtime dependencies for AgentCore deployment.
+# This file is used by the AgentCore starter toolkit (agentcore configure/deploy).
+# It should only include what the agent needs to run — not evals or dev tools.
 bedrock-agentcore
 strands-agents
-strands-agents-evals
 requests
 pydantic
 boto3
-aws-opentelemetry-distro>=0.10.1
