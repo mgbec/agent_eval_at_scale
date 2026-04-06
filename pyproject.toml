@@ -1,0 +1,18 @@
+[project]
+name = "dependabot-alert-analyzer"
+version = "0.1.0"
+description = "Agents that analyze Dependabot alerts, evaluated for failure modes at scale"
+requires-python = ">=3.10"
+dependencies = [
+    "strands-agents>=0.1.0",
+    "strands-agents-evals>=0.1.0",
+    "requests>=2.31.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+]
