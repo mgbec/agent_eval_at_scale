@@ -1,22 +1,17 @@
 """Tools for fetching Dependabot alerts from GitHub API."""
 
 import json
-import os
 from typing import Any
 
 import requests
 
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+from .auth import get_github_headers
+
 GITHUB_API = "https://api.github.com"
-HEADERS = {
-    "Authorization": f"Bearer {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-}
 
 
 def _gh_get(url: str, params: dict | None = None) -> dict | list:
-    resp = requests.get(url, headers=HEADERS, params=params, timeout=30)
+    resp = requests.get(url, headers=get_github_headers(), params=params, timeout=30)
     resp.raise_for_status()
     return resp.json()
 

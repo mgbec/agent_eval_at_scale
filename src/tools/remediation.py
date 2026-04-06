@@ -1,16 +1,10 @@
 """Tools for assessing remediation options for Dependabot alerts."""
 
 import json
-import os
 
 import requests
 
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-HEADERS = {
-    "Authorization": f"Bearer {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-}
+from .auth import get_github_headers
 
 
 def check_fix_available(owner: str, repo: str, alert_number: int) -> str:
@@ -26,7 +20,7 @@ def check_fix_available(owner: str, repo: str, alert_number: int) -> str:
     """
     try:
         url = f"https://api.github.com/repos/{owner}/{repo}/dependabot/alerts/{alert_number}"
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = requests.get(url, headers=get_github_headers(), timeout=30)
         resp.raise_for_status()
         alert = resp.json()
 
@@ -83,7 +77,7 @@ def get_advisory_detail(ghsa_id: str) -> str:
     """
     try:
         url = f"https://api.github.com/advisories/{ghsa_id}"
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = requests.get(url, headers=get_github_headers(), timeout=30)
         resp.raise_for_status()
         adv = resp.json()
         return json.dumps({

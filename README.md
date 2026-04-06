@@ -26,8 +26,24 @@ evals/
 python -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-export GITHUB_TOKEN=ghp_your_token_here
 ```
+
+### Authentication
+
+The tools authenticate with GitHub using this priority:
+
+1. **GitHub CLI (recommended)** — if `gh` is installed and you're logged in, it just works:
+   ```bash
+   gh auth login
+   ```
+2. **Environment variable** — set `GITHUB_TOKEN` manually:
+   ```bash
+   export GITHUB_TOKEN=ghp_your_token_here   # Linux/macOS
+   set GITHUB_TOKEN=ghp_your_token_here      # Windows cmd
+   $env:GITHUB_TOKEN="ghp_your_token_here"   # Windows PowerShell
+   ```
+
+The token is resolved once and cached for the process lifetime. If neither method is available, API calls will run unauthenticated (lower rate limits, no access to private repos).
 
 ## Usage
 
