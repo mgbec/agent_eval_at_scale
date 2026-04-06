@@ -15,10 +15,10 @@ The difference is that agents are non-deterministic. Ask the same question twice
 Traditional software fails loudly. A null pointer throws an exception. A bad query returns an error. You see it immediately.
 
 Agents fail quietly. An agent might:
-- Skip a critical API call and fabricate a plausible-looking answer instead
-- Use the right tool but pass the wrong parameters
-- Produce a confident, well-formatted response that's completely wrong
-- Solve 90% of the problem and silently ignore the hardest part
+- Skip a critical API call and fabricate a plausible-looking answer instead.
+- Use the right tool but pass the wrong parameters to it.
+- Produce a confident, well-formatted response that is completely wrong.
+- Solve 90% of the problem and silently ignore the hardest part.
 
 Without evals, these failures look like successes. The output reads well, the format is correct, and nobody notices the data was made up — until it matters.
 
@@ -60,33 +60,33 @@ Our `SeverityAccuracyEvaluator` validates that severity levels and CVSS scores i
 
 Agents have access to multiple tools, and picking the wrong one can mean operating on stale or incomplete data.
 
-Example: if you ask for an org-wide vulnerability report and the agent only checks one repository, you get a false sense of security. Trajectory evaluation verifies the agent called the right tools in the right sequence.
+Example: if you ask for an org-wide vulnerability report and the agent only checks one repository, you get a false sense of security. Trajectory evaluation verifies that the agent called the right tools in the right sequence.
 
 ### 5. Testing error handling
 
-What happens when the agent can't access a private repository? A secure agent says "I couldn't access this repo" and stops. An insecure agent fills in the gaps with guesses and presents them as facts.
+What happens when the agent can't access a private repository? A secure agent reports "I couldn't access this repo" and stops. An insecure agent fills in the gaps with guesses and presents them as facts.
 
-Our test cases include scenarios where API calls are expected to fail, specifically to verify the agent handles errors honestly.
+Our test cases include scenarios where API calls are expected to fail. These exist specifically to verify that the agent handles errors honestly rather than filling in gaps with fabricated data.
 
 ## The Five Types of Agent Failure
 
-Understanding failure modes helps you design better evals. Here's a practical taxonomy:
+Understanding failure modes helps you design better evals. Here is a practical taxonomy of the five main categories:
 
 | Failure Mode | What Happens | Why It's Dangerous | How to Catch It |
 |---|---|---|---|
-| Wrong tool selection | Agent picks the wrong API or skips a required call | Decisions based on incomplete data | Trajectory evaluation |
-| Wrong parameters | Right tool, wrong arguments | Fetches wrong data silently | Tool parameter evaluation |
-| Hallucinated output | Agent invents data instead of fetching it | False confidence in fabricated results | Tool-before-claim checks, faithfulness evaluation |
-| Unsafe recommendations | Agent suggests harmful actions | Breaking changes, security regressions | Domain-specific safety evaluators |
-| Goal non-completion | Agent appears to work but doesn't solve the problem | False sense of resolution | Goal success rate evaluation |
+| Wrong tool selection | The agent picks the wrong API or skips a required call. | Decisions are based on incomplete data. | Trajectory evaluation |
+| Wrong parameters | The agent calls the right tool but passes incorrect arguments. | It fetches wrong data silently. | Tool parameter evaluation |
+| Hallucinated output | The agent invents data instead of fetching it from a source. | Teams act on fabricated results with false confidence. | Tool-before-claim checks and faithfulness evaluation |
+| Unsafe recommendations | The agent suggests actions that could cause harm. | These can lead to breaking changes or security regressions. | Domain-specific safety evaluators |
+| Goal non-completion | The agent appears to work but doesn't actually solve the problem. | It creates a false sense of resolution. | Goal success rate evaluation |
 
 ## How This Project Implements Evaluations
 
-This project uses the [Strands Agents Evals](https://github.com/strands-agents/evals) framework. Here's how the pieces fit together:
+This project uses the [Strands Agents Evals](https://github.com/strands-agents/evals) framework. Here is how the pieces fit together.
 
 ### Test cases
 
-Each test case defines an input (what you ask the agent), an expected trajectory (which tools it should call), and metadata about what failure mode the case targets.
+Each test case defines an input, which is what you ask the agent. It also includes an expected trajectory that specifies which tools the agent should call, along with metadata describing what failure mode the case is designed to target.
 
 ```python
 Case(
@@ -99,11 +99,11 @@ Case(
 
 ### Evaluators
 
-Evaluators score the agent's response. Some use LLM-as-a-judge (another AI model grades the output against a rubric). Others are deterministic checks written in Python.
+Evaluators score the agent's response. Some use LLM-as-a-judge, where another AI model grades the output against a rubric. Others are deterministic checks written in Python.
 
-- **TrajectoryEvaluator** — did the agent call the right tools in the right order?
-- **OutputEvaluator** — does the output meet quality criteria defined in a rubric?
-- **Custom evaluators** — domain-specific checks like `SeverityAccuracyEvaluator`
+- The **TrajectoryEvaluator** checks whether the agent called the right tools in the right order.
+- The **OutputEvaluator** assesses whether the output meets quality criteria defined in a rubric.
+- **Custom evaluators** perform domain-specific checks, such as the `SeverityAccuracyEvaluator` that validates CVSS scores and severity labels.
 
 ### Running at scale
 
@@ -111,7 +111,7 @@ Evaluators score the agent's response. Some use LLM-as-a-judge (another AI model
 python -m evals.run_evals --agent all --save
 ```
 
-This runs every test case against every evaluator for all three agents, produces a failure analysis with cross-evaluator correlation (which cases fail on multiple dimensions), and saves results as JSON for tracking over time.
+This command runs every test case against every evaluator for all three agents. It produces a failure analysis with cross-evaluator correlation that shows which cases fail on multiple dimensions, and saves the results as JSON for tracking over time.
 
 ### Reading the results
 
@@ -142,11 +142,11 @@ The cross-evaluator correlation is the most useful part — when a case fails on
 
 If you're building agents and want to add evaluations, start here:
 
-1. **Identify your failure modes.** What's the worst thing your agent could do? Work backwards from there.
-2. **Write cases that target each failure mode.** Don't just test the happy path. Test what happens when APIs fail, data is missing, or the question is ambiguous.
-3. **Layer multiple evaluators.** A single evaluator catches one dimension of failure. Combining trajectory, output, and custom evaluators gives you a multi-dimensional view.
-4. **Run evals on every model change.** Treat them like regression tests. If scores drop, investigate before deploying.
-5. **Track results over time.** Save eval results as JSON and compare across runs. Trends matter more than individual scores.
+1. **Identify your failure modes.** Ask yourself what the worst thing your agent could do is, and work backwards from there.
+2. **Write cases that target each failure mode.** Don't just test the happy path. Include cases where APIs fail, data is missing, or the question is ambiguous.
+3. **Layer multiple evaluators.** A single evaluator catches one dimension of failure. Combining trajectory, output, and custom evaluators gives you a multi-dimensional view of agent behavior.
+4. **Run evals on every model change.** Treat them like regression tests. If scores drop after a model update, investigate before deploying.
+5. **Track results over time.** Save eval results as JSON and compare across runs. Trends over time matter more than any individual score.
 
 ## Further Reading
 
